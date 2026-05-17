@@ -8,7 +8,17 @@
    ========================================================= */
 
 (() => {
-
+  
+  const isMobile = window.innerWidth < 768;
+  
+  if (isMobile) {
+	renderer.setPixelRatio(1);
+  } else {
+	renderer.setPixelRatio(window.devicePixelRatio);
+  }
+  
+  const mouseInfluence = isMobile ? 0.04 : 0.12;
+  
   const container = document.getElementById("bg-canvas");
 
   if (!container || typeof THREE === "undefined") return;
@@ -42,7 +52,7 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   container.appendChild(renderer.domElement);
-
+  
   /* =========================================================
      BACKGROUND FIELD
      ========================================================= */

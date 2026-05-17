@@ -8,7 +8,13 @@
    ========================================================= */
 
 (() => {
+  
+  const isMobile = window.innerWidth < 768;
 
+  if (isMobile) {
+	document.querySelector(".cursor-glow")?.remove();
+  }
+  
   const glow = document.querySelector(".cursor-glow");
 
   if (!glow) return;
