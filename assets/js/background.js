@@ -1,6 +1,10 @@
 
 // assets/js/background.js
 
+if (document.documentElement.classList.contains("reduced-motion")) {
+    throw new Error("Reduced motion mode enabled");
+}
+
 const container = document.getElementById("bg-canvas");
 
 const scene = new THREE.Scene();
@@ -91,6 +95,16 @@ const mouse = {
     x: 0.5,
     y: 0.5
 };
+
+
+const isMobile = window.innerWidth < 768;
+
+const geometry = new THREE.PlaneGeometry(
+    12,
+    12,
+    isMobile ? 48 : 128,
+    isMobile ? 48 : 128
+);
 
 window.addEventListener("mousemove", (e) => {
 
