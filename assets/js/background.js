@@ -1,137 +1,236 @@
 
 // assets/js/background.js
 
-if (document.documentElement.classList.contains("reduced-motion")) {
-    throw new Error("Reduced motion mode enabled");
-}
 
-const container = document.getElementById("bg-canvas");
+/* =========================================================
+   assets/js/background.js
+   Production-grade atmospheric analytical field
+   ========================================================= */
 
-const scene = new THREE.Scene();
+(() => {
 
-const camera = new THREE.PerspectiveCamera(
-    75,
+  const container = document.getElementById("bg-canvas");
+
+  if (!container || typeof THREE === "undefined") return;
+
+  let scene, camera, renderer;
+  let fieldMesh;
+  let particles;
+  let mouse = { x: 0, y: 0 };
+  let targetMouse = { x: 0, y: 0 };
+
+  const clock = new THREE.Clock();
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(
+    55,
     window.innerWidth / window.innerHeight,
     0.1,
     1000
-);
+  );
 
-camera.position.z = 5;
+  camera.position.z = 7;
 
-const renderer = new THREE.WebGLRenderer({
+  renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
     powerPreference: "high-performance"
-});
+  });
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
-container.appendChild(renderer.domElement);
+  container.appendChild(renderer.domElement);
 
-const geometry = new THREE.PlaneGeometry(12, 12, 128, 128);
+  /* =========================================================
+     BACKGROUND FIELD
+     ========================================================= */
 
-const uniforms = {
-    uTime: { value: 0 },
-    uMouse: { value: new THREE.Vector2(0.5, 0.5) }
-};
+  const geometry = new THREE.PlaneGeometry(20, 20, 128, 128);
 
-const material = new THREE.ShaderMaterial({
-    uniforms,
+  const material = new THREE.ShaderMaterial({
+
+    transparent: true,
+
+    uniforms: {
+      uTime: { value: 0 },
+      uMouse: { value: new THREE.Vector2(0, 0) }
+    },
+
     vertexShader: `
-        uniform float uTime;
-        varying vec2 vUv;
+      varying vec2 vUv;
+      uniform float uTime;
+      uniform vec2 uMouse;
 
-        void main() {
-            vUv = uv;
+      void main() {
 
-            vec3 pos = position;
+        vUv = uv;
 
-            float wave1 = sin(pos.x * 2.5 + uTime * 0.5) * 0.15;
-            float wave2 = cos(pos.y * 3.0 + uTime * 0.4) * 0.15;
+        vec3 pos = position;
 
-            pos.z += wave1 + wave2;
+        float wave1 =
+          sin(pos.x * 1.6 + uTime * 0.25) * 0.12;
 
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }
+        float wave2 =
+          cos(pos.y * 2.0 + uTime * 0.18) * 0.12;
+
+        float radial =
+          sin(length(pos.xy) * 2.5 - uTime * 0.3) * 0.05;
+
+        float mouseInfluence =
+          distance(uv, uMouse) * -0.18;
+
+        pos.z += wave1 + wave2 + radial + mouseInfluence;
+
+        gl_Position =
+          projectionMatrix *
+          modelViewMatrix *
+          vec4(pos, 1.0);
+      }
     `,
+
     fragmentShader: `
-        uniform float uTime;
-        uniform vec2 uMouse;
+      varying vec2 vUv;
+      uniform float uTime;
 
-        varying vec2 vUv;
+      float random(vec2 st) {
+        return fract(
+          sin(dot(st.xy, vec2(12.9898,78.233))) *
+          43758.5453123
+        );
+      }
 
-        void main() {
+      void main() {
 
-            vec2 uv = vUv;
+        vec2 uv = vUv;
 
-            vec2 mouse = uMouse;
+        float noise =
+          random(uv + uTime * 0.01);
 
-            float dist = distance(uv, mouse);
+        float glow =
+          0.25 / length(uv - vec2(0.5));
 
-            vec3 deepBlue = vec3(0.02, 0.03, 0.10);
-            vec3 purple = vec3(0.10, 0.08, 0.24);
-            vec3 electric = vec3(0.25, 0.32, 0.95);
+        vec3 color = vec3(
+          0.04,
+          0.07,
+          0.13
+        );
 
-            float pulse = sin(uTime * 0.25) * 0.5 + 0.5;
+        color += glow * 0.08;
 
-            vec3 color = mix(deepBlue, purple, uv.y + pulse * 0.1);
+        color += noise * 0.015;
 
-            color += electric * (0.08 / (dist + 0.25));
-
-            float vignette = smoothstep(1.1, 0.2, distance(uv, vec2(0.5)));
-
-            color *= vignette;
-
-            gl_FragColor = vec4(color, 1.0);
-        }
+        gl_FragColor = vec4(color, 0.92);
+      }
     `
-});
+  });
 
-const mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
+  fieldMesh = new THREE.Mesh(geometry, material);
 
-const mouse = {
-    x: 0.5,
-    y: 0.5
-};
+  scene.add(fieldMesh);
 
+  /* =========================================================
+     PARTICLE SIGNAL FIELD
+     ========================================================= */
 
-const isMobile = window.innerWidth < 768;
+  const particleCount = 1800;
 
-const geometry = new THREE.PlaneGeometry(
-    12,
-    12,
-    isMobile ? 48 : 128,
-    isMobile ? 48 : 128
-);
+  const particleGeometry = new THREE.BufferGeometry();
 
-window.addEventListener("mousemove", (e) => {
+  const positions = new Float32Array(particleCount * 3);
 
-    mouse.x = e.clientX / window.innerWidth;
-    mouse.y = 1 - e.clientY / window.innerHeight;
-});
+  for (let i = 0; i < particleCount; i++) {
 
-function animate() {
+    positions[i * 3] =
+      (Math.random() - 0.5) * 18;
 
-    requestAnimationFrame(animate);
+    positions[i * 3 + 1] =
+      (Math.random() - 0.5) * 18;
 
-    uniforms.uTime.value += 0.01;
+    positions[i * 3 + 2] =
+      (Math.random() - 0.5) * 5;
+  }
 
-    uniforms.uMouse.value.lerp(mouse, 0.05);
+  particleGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions, 3)
+  );
 
-    mesh.rotation.z += 0.0004;
+  const particleMaterial = new THREE.PointsMaterial({
+    size: 0.015,
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false
+  });
 
-    renderer.render(scene, camera);
-}
+  particles = new THREE.Points(
+    particleGeometry,
+    particleMaterial
+  );
 
-animate();
+  scene.add(particles);
 
-window.addEventListener("resize", () => {
+  /* =========================================================
+     MOUSE
+     ========================================================= */
 
-    camera.aspect = window.innerWidth / window.innerHeight;
+  window.addEventListener("mousemove", (e) => {
+
+    targetMouse.x = e.clientX / window.innerWidth;
+    targetMouse.y = 1 - e.clientY / window.innerHeight;
+
+  });
+
+  /* =========================================================
+     RESIZE
+     ========================================================= */
+
+  window.addEventListener("resize", () => {
+
+    camera.aspect =
+      window.innerWidth / window.innerHeight;
 
     camera.updateProjectionMatrix();
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+  });
+
+  /* =========================================================
+     ANIMATION
+     ========================================================= */
+
+  function animate() {
+
+    requestAnimationFrame(animate);
+
+    const elapsed = clock.getElapsedTime();
+
+    mouse.x += (targetMouse.x - mouse.x) * 0.035;
+    mouse.y += (targetMouse.y - mouse.y) * 0.035;
+
+    material.uniforms.uTime.value = elapsed;
+
+    material.uniforms.uMouse.value.set(
+      mouse.x,
+      mouse.y
+    );
+
+    particles.rotation.z += 0.00025;
+    particles.rotation.y += 0.00018;
+
+    camera.position.x =
+      (mouse.x - 0.5) * 0.3;
+
+    camera.position.y =
+      (mouse.y - 0.5) * 0.25;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+})();

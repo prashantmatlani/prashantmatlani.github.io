@@ -2,29 +2,72 @@
 
 // assets/js/cursor.js
 
-const glow = document.querySelector(".cursor-glow");
+/* =========================================================
+   assets/js/cursor.js
+   Magnetic atmospheric cursor system
+   ========================================================= */
 
-let mouseX = window.innerWidth / 2;
-let mouseY = window.innerHeight / 2;
+(() => {
 
-let currentX = mouseX;
-let currentY = mouseY;
+  const glow = document.querySelector(".cursor-glow");
 
-window.addEventListener("mousemove", (e) => {
+  if (!glow) return;
+
+  let mouseX = 0;
+  let mouseY = 0;
+
+  let currentX = 0;
+  let currentY = 0;
+
+  let scale = 1;
+
+  const hoverTargets = document.querySelectorAll(
+    "a, button, .research-card, .capability-card"
+  );
+
+  document.addEventListener("mousemove", (e) => {
 
     mouseX = e.clientX;
     mouseY = e.clientY;
-});
+  });
 
-function animateCursor() {
+  hoverTargets.forEach((el) => {
 
-    currentX += (mouseX - currentX) * 0.08;
-    currentY += (mouseY - currentY) * 0.08;
+    el.addEventListener("mouseenter", () => {
 
-    glow.style.left = `${currentX}px`;
-    glow.style.top = `${currentY}px`;
+      scale = 1.8;
 
-    requestAnimationFrame(animateCursor);
-}
+      glow.classList.add("cursor-active");
 
-animateCursor();
+    });
+
+    el.addEventListener("mouseleave", () => {
+
+      scale = 1;
+
+      glow.classList.remove("cursor-active");
+
+    });
+
+  });
+
+  function animate() {
+
+    currentX += (mouseX - currentX) * 0.12;
+    currentY += (mouseY - currentY) * 0.12;
+
+    glow.style.transform = `
+      translate3d(
+        ${currentX - 120}px,
+        ${currentY - 120}px,
+        0
+      )
+      scale(${scale})
+    `;
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+})();
