@@ -1,3 +1,178 @@
+
+/* =========================================================
+   GLOBAL ATMOSPHERIC BACKGROUND
+========================================================= */
+
+html,
+body {
+    background: #050816;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+body {
+    position: relative;
+    color: rgba(255,255,255,0.92);
+    font-family: Inter, system-ui, sans-serif;
+}
+
+#bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -30;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+}
+
+.noise-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -20;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image:
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.08) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 4px 4px;
+}
+
+.cursor-glow {
+    position: fixed;
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -10;
+    background:
+        radial-gradient(circle,
+        rgba(120,140,255,0.12) 0%,
+        rgba(80,100,255,0.06) 35%,
+        transparent 75%);
+    transform: translate(-50%, -50%);
+    filter: blur(35px);
+    transition: opacity 0.25s ease;
+    opacity: 0.9;
+}
+
+/* =========================================================
+   RESEARCH LAB PANELS
+========================================================= */
+
+.glass-card {
+    background: rgba(12, 18, 38, 0.52);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 24px;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 10px 40px rgba(0,0,0,0.28);
+    transition:
+        transform 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(120,140,255,0.18);
+    box-shadow:
+        0 12px 45px rgba(0,0,0,0.35),
+        0 0 25px rgba(90,110,255,0.12);
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5, 8, 22, 0.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* =========================================================
+   TYPOGRAPHY
+========================================================= */
+
+.section-title {
+    font-size: clamp(2rem, 4vw, 4rem);
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+}
+
+.section-subtitle {
+    color: rgba(255,255,255,0.68);
+    max-width: 780px;
+    line-height: 1.8;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.btn-primary {
+    background: linear-gradient(135deg, #6b7cff, #8e7dff);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-weight: 600;
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(110,120,255,0.35);
+}
+
+/* =========================================================
+   SECTION REVEALS
+========================================================= */
+
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+        opacity 0.8s ease,
+        transform 0.8s ease;
+}
+
+.reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =========================================================
+   MOBILE PERFORMANCE
+========================================================= */
+
+@media (max-width: 768px) {
+
+    .cursor-glow {
+        display: none;
+    }
+
+    .glass-card:hover {
+        transform: none;
+    }
+
+    .noise-overlay {
+        opacity: 0.02;
+    }
+}
+
+
+
+
 * {
   margin: 0;
   padding: 0;
